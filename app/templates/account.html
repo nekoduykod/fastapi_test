@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='favicon.ico') }}">
+</head>
+
+<body class="account-background">
+
+    <h1>Welcome, {{ user.username }}. Role - {{ role }}</h1>
+
+    <h2>Create ticket</h2>
+    <form id="create-ticket-form" method="POST" action="/create-ticket">
+        <label for="note">Note:</label>
+        <input type="text" name="note" id="note" required>
+        <br>
+        <label for="group_id">Group:</label>
+        <select name="group_id" id="group_id">
+            <option value="">None</option>
+            {% for group in groups %}
+                <option value="{{ group.id }}">{{ group.title }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <button type="submit" id="create-ticket-button">Create ticket</button>
+    </form>
+
+    <h2>Tickets</h2>
+    <ul id="tickets-list">
+        {% for ticket in tickets %}
+        <li id="ticket-{{ ticket.id }}">
+            Status: {{ ticket.status }} // {{ ticket.note }}
+            <br>
+            Assigned to: {{ ticket.user.username if ticket.user else "None" }}
+            <br>
+            Group: {{ ticket.group.title if ticket.group else "None" }}
+            <br>
+            
+            <form class="update-status-form" method="POST" action="/update-ticket-status">
+                <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
+                <button type="submit" name="status" value="Open">Open</button>
+                <button type="submit" name="status" value="Closed">Closed</button>
+                <button type="submit" name="status" value="Pending">Pending</button>
+            </form>
+            
+            <form class="assign-user-form" method="POST" action="/assign-ticket-user">
+                <label for="user_id">Assign to User:</label>
+                <select name="user_id" id="user_id">
+                    <option value="">None</option>
+                    {% if group_id %}
+                        {% for user in users %}
+                            {% if not user.group_id or user.group_id == group_id %}
+                                <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+                <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
+                <button type="submit">Assign User</button>
+            </form>
+            
+            
+            <form class="assign-group-form" method="POST" action="/assign-ticket-group">
+                <label for="group_id">Assign to Group:</label>
+                <select name="group_id" id="group_id">
+                    <option value="">None</option>
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.title }}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
+                <button type="submit">Assign Group</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    <button id="reload-button">Reload tickets</button>
+    
+    <div class="pagination">
+        {% if prev_page is defined and prev_page is not none %}
+            <a href="?page={{ prev_page }}">Previous</a>
+        {% endif %}
+        Page {{ current_page }} of {{ total_pages }}
+        {% if next_page is defined and next_page is not none %}
+            <a href="?page={{ next_page }}">Next</a>
+        {% endif %}
+    </div>
+    
+    <h2>Create Group</h2>
+    <form method="POST" action="/create-group">
+        <label for="group_title">Group Title:</label>
+        <input type="text" name="title" id="group_title" required>
+        <br>
+        <button type="submit">Create Group</button>
+    </form>
+
+    {% if role == 'Admin' %}
+    <h2>Manage Users</h2>
+    <ul>
+        {% for u in users %}
+        <li>
+            {% if u.id != user.id %}
+                {{ u.username }} (Role: {{ u.role }}. Group: {{ u.group.title if u.group else "None" }})
+            {% else %}
+    
+            {% endif %}
+            {% if u.id != user.id %}
+            <form method="POST" action="/assign-role">
+                <input type="hidden" name="user_id" value="{{ u.id }}">
+                <select name="role">
+                    <option value="Admin" {% if u.role == 'Admin' %}selected{% endif %}>Admin</option>
+                    <option value="Manager" {% if u.role == 'Manager' %}selected{% endif %}>Manager</option>
+                    <option value="Analyst" {% if u.role == 'Analyst' %}selected{% endif %}>Analyst</option>
+                </select>
+                <button type="submit">Assign Role</button>
+            </form>
+            <form method="POST" action="/assign-user-group">
+                <input type="hidden" name="user_id" value="{{ u.id }}">
+                <select name="group_id">
+                    <option value="">None</option>
+                    {% for group in groups %}
+                    <option value="{{ group.id }}" {% if u.group_id == group.id %}selected{% endif %}>{{ group.title }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Assign Group</button>
+            </form>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+
+    <form method="POST" action="/account">
+        <label for="current_password">Current password:</label>
+        <input type="password" name="current_password" id="current_password" required>
+        <br>
+        <label for="new_password">New password:</label>
+        <input type="password" name="new_password" id="new_password" required>
+        <br>
+        <label for="confirm_password">Confirm password:</label>
+        <input type="password" name="confirm_password" id="confirm_password" required>
+        <br>
+        <button type="submit">Change it now!</button>
+    </form>
+
+    <a href="/" class="logout-link">Logout</a>
+
+</body>
+
+</html>
